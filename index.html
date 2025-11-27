@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KKBox Customer Churn Prediction | Big Data Pipeline</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="hero">
+        <div class="container">
+            <div class="badge">Machine Learning Case Study</div>
+            <h1>KKBox Customer Churn Prediction</h1>
+            <p class="subtitle">End-to-End Big Data Pipeline & Binary Classification Model</p>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="phase-section">
+            <h2 class="section-title">01. Problem Identification</h2>
+            <div class="card-grid">
+                <div class="card highlight-card">
+                    <h3>The Goal</h3>
+                    <p>Build a binary classifier to predict whether a subscriber will fail to renew their membership within 30 days. This utilizes temporal transaction history and listening logs to flag churn risks.</p>
+                </div>
+                <div class="stat-box-container">
+                    <div class="stat-box">
+                        <span class="stat-number">6.7M</span>
+                        <span class="stat-label">Users</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">21M</span>
+                        <span class="stat-label">Transactions</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">400M</span>
+                        <span class="stat-label">Logs (30GB)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">ETL</span>
+                        <span class="stat-label">Batch Workflow</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="phase-section">
+            <h2 class="section-title">02. Data Sourcing</h2>
+            <div class="card">
+                <div class="content-split">
+                    <div class="text-content">
+                        <h3>Dataset Source</h3>
+                        <p><strong>Kaggle KKBox Churn Prediction Challenge</strong></p>
+                        <p>This is a complex relational dataset, not a flat file. It requires engineering features from multiple tables linked by a unique User ID (<code>msno</code>).</p>
+                        <ul class="styled-list">
+                            <li><strong>Processing:</strong> Batch Processing Architecture required.</li>
+                            <li><strong>Optimization:</strong> Conversion from CSV to Parquet required for speed.</li>
+                        </ul>
+                    </div>
+                    <div class="table-list">
+                        <h4>Schema Tables</h4>
+                        <div class="table-tag">members.csv</div>
+                        <div class="table-tag">transactions.csv</div>
+                        <div class="table-tag warning">user_logs.csv (30GB)</div>
+                        <div class="table-tag">train.csv / test.csv</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="phase-section">
+            <h2 class="section-title">03. Pipeline Architecture</h2>
+            <p class="section-intro">Since the user logs exceed memory limits, a distributed batch processing approach is used to aggregate data before modeling.</p>
+            
+            <div class="pipeline-diagram">
+                <div class="step">
+                    <div class="step-icon">📄</div>
+                    <div class="step-title">Raw Data</div>
+                    <div class="step-desc">CSV Ingestion</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">⚡</div>
+                    <div class="step-title">Ingestion</div>
+                    <div class="step-desc">PySpark</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">💾</div>
+                    <div class="step-title">Data Lake</div>
+                    <div class="step-desc">Parquet Format</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">⚙️</div>
+                    <div class="step-title">ETL</div>
+                    <div class="step-desc">Spark Aggregation</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step">
+                    <div class="step-icon">💎</div>
+                    <div class="step-title">Gold Table</div>
+                    <div class="step-desc">Feature Set</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="step active">
+                    <div class="step-icon">🧠</div>
+                    <div class="step-title">Model</div>
+                    <div class="step-desc">LightGBM</div>
+                </div>
+            </div>
+
+            <div class="tech-stack-grid">
+                <div class="tech-item">
+                    <strong>Parquet Storage</strong>
+                    <span>Columnar storage makes searching 400M rows 10-50x faster than CSV.</span>
+                </div>
+                <div class="tech-item">
+                    <strong>Spark Aggregation</strong>
+                    <span>Reduces 30GB of raw logs into a ~1GB user-level summary.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="phase-section">
+            <h2 class="section-title">04. Machine Learning Methodology</h2>
+            
+            <div class="grid-2col">
+                <div class="card">
+                    <h3>Pre-Processing & Categorical</h3>
+                    <ul class="styled-list">
+                        <li><strong>Missing Values:</strong> Gender nulls cast to "Unknown" category (predictive signal).</li>
+                        <li><strong>Age Outliers:</strong> Filtered to 10-80 range; invalid ages replaced via Median Imputation.</li>
+                        <li><strong>Encoding:</strong> Label Encoding used for City/Registration. One-Hot avoided to prevent sparsity.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Feature Engineering (RFM)</h3>
+                    <ul class="styled-list">
+                        <li><strong>Engagement:</strong> % of songs completed vs. skipped (Satisfaction metric).</li>
+                        <li><strong>Financial:</strong> <code>price_per_day</code> and <code>auto_renew_change</code> (Strong predictors).</li>
+                        <li><strong>Recency:</strong> Days since last log entry.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Algorithm Selection</h3>
+                    <div class="algo-badge">Selected: LightGBM</div>
+                    <p class="mt-2">Preferred over XGBoost for this dataset because:</p>
+                    <ul class="styled-list">
+                        <li>Significantly faster on millions of rows.</li>
+                        <li>Natively handles missing values.</li>
+                        <li>Built-in parameters for class imbalance.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Dataset Properties</h3>
+                    <ul class="styled-list">
+                        <li><strong>Imbalanced:</strong> Churn rate approx 5-10%.</li>
+                        <li><strong>Temporal:</strong> User behavior trends (Jan vs Feb) differ.</li>
+                        <li><strong>Scaling:</strong> Not required. Tree-based models are invariant to scale.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="phase-section">
+            <h2 class="section-title">05. Implementation Plan</h2>
+            
+            <div class="code-wrapper">
+                <div class="code-header">
+                    <span class="lang">Python (PySpark)</span>
+                    <span class="file-name">etl_process.py</span>
+                </div>
+                <pre><code>def process_logs_spark():
+    logs = spark.read.csv("user_logs.csv")
+    
+    # Feature Engineering on Big Data
+    user_features = logs.groupBy("msno").agg(
+        avg("total_secs").alias("avg_listen_time"),
+        sum("num_unq").alias("total_unique_songs"),
+        max("date").alias("last_seen_date")
+    )
+    return user_features</code></pre>
+            </div>
+
+            <div class="code-wrapper">
+                <div class="code-header">
+                    <span class="lang">Python (Pandas)</span>
+                    <span class="file-name">data_prep.py</span>
+                </div>
+                <pre><code>def prepare_training_data():
+    members = pd.read_csv("members.csv")
+    train_labels = pd.read_csv("train.csv")
+    transactions = pd.read_csv("transactions.csv")
+    
+    # Merge everything onto the Train Labels
+    df = train_labels.merge(members, on="msno", how="left")
+    
+    # Merge Spark Results (Converted to Pandas)
+    df = df.merge(process_logs_spark().toPandas(), on="msno", how="left")
+    return df</code></pre>
+            </div>
+
+            <div class="code-wrapper">
+                <div class="code-header">
+                    <span class="lang">Python (LightGBM)</span>
+                    <span class="file-name">train_model.py</span>
+                </div>
+                <pre><code>def train_model(df):
+    X = df.drop(["is_churn", "msno"], axis=1)
+    y = df["is_churn"]
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    # Initialize LightGBM with Imbalance handling
+    model = lgb.LGBMClassifier(
+        n_estimators=1000,
+        learning_rate=0.05,
+        scale_pos_weight=9  # Handling 1:9 Churn Ratio
+    )
+    model.fit(X_train, y_train)
+    return model</code></pre>
+            </div>
+
+            <div class="metrics-container">
+                <h3>Evaluation Metrics</h3>
+                <div class="metric-card-wrapper">
+                    <div class="metric-card">
+                        <h4>Log Loss</h4>
+                        <p>Primary Metric. Measures uncertainty of probabilities. Penalizes confidence in wrong answers.</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Recall</h4>
+                        <p>Business Metric. Minimizes False Negatives (Predicting a user will stay when they actually leave).</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>KKBox Case Study Project | Data Science Portfolio</p>
+    </footer>
+
+</body>
+</html>
